@@ -21,6 +21,8 @@ export interface PredictionRequest {
   V3: number;
 }
 
+export type TransactionRecordStatus = 'SUCCESS' | 'FLAGGED' | 'CLEARED' | 'BLOCKED' | 'UNDER_REVIEW';
+
 export interface SessionTransactionRecord {
   id: string;
   time: string;
@@ -28,7 +30,11 @@ export interface SessionTransactionRecord {
   fraud_score: number;
   risk_level: string;
   prediction: string | number;
-  status: 'SUCCESS' | 'FLAGGED' | 'CLEARED';
+  status: TransactionRecordStatus;
+  amount?: string;
+  merchant?: string;
+  location?: string;
+  detectionReasons?: string[];
 }
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;

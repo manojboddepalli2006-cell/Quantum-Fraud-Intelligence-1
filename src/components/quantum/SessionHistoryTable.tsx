@@ -10,7 +10,7 @@ import { useQuantum } from '../../context/QuantumContext';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { RiskIndicator } from '../ui/StatusIndicator';
-import { History, Trash2, Clock, CheckCircle2, AlertOctagon } from 'lucide-react';
+import { History, Trash2, Clock, CheckCircle2, AlertOctagon, Lock, AlertTriangle } from 'lucide-react';
 
 export const SessionHistoryTable: React.FC = () => {
   const { sessionHistory, clearSessionHistory } = useQuantum();
@@ -60,8 +60,8 @@ export const SessionHistoryTable: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-[#E8D2B5] text-[#8B6245] uppercase tracking-wider font-mono text-[11px]">
+                <th className="py-2.5 px-3 font-semibold">Tx ID & Merchant</th>
                 <th className="py-2.5 px-3 font-semibold">Time</th>
-                <th className="py-2.5 px-3 font-semibold">Prediction</th>
                 <th className="py-2.5 px-3 font-semibold">Risk Level</th>
                 <th className="py-2.5 px-3 font-semibold">Fraud Score</th>
                 <th className="py-2.5 px-3 font-semibold text-right">Status</th>
@@ -69,21 +69,23 @@ export const SessionHistoryTable: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-[#E8D2B5]/60 font-mono">
               {sessionHistory.map((item) => {
-                const isFraud =
-                  String(item.prediction).toUpperCase() === '1' ||
-                  String(item.prediction).toUpperCase() === 'FRAUD' ||
-                  item.fraud_score >= 0.5;
+                const isFlagged = item.status === 'FLAGGED' || item.fraud_score >= 0.70;
 
                 return (
                   <tr key={item.id} className="hover:bg-[#F6EBDD]/40 transition-colors">
+                    {/* Tx ID & Merchant */}
+                    <td className="py-3 px-3">
+                      <div className="font-bold text-[#2E1E18]">{item.id}</div>
+                      {item.merchant && (
+                        <div className="text-[11px] font-sans text-[#8B6245] truncate max-w-[160px]">
+                          {item.merchant} · {item.amount}
+                        </div>
+                      )}
+                    </td>
+
                     {/* Time */}
                     <td className="py-3 px-3 text-[#4A3024] tabular-nums">
                       {item.time}
-                    </td>
-
-                    {/* Prediction */}
-                    <td className="py-3 px-3 font-semibold text-[#2E1E18]">
-                      {String(item.prediction)}
                     </td>
 
                     {/* Risk Level */}
@@ -91,20 +93,40 @@ export const SessionHistoryTable: React.FC = () => {
                       <RiskIndicator level={item.risk_level} />
                     </td>
 
-                    {/* Fraud Score: 0.xxx */}
-                    <td className="py-3 px-3 font-bold text-[#2E1E18] tabular-nums">
-                      {item.fraud_score.toFixed(3)}
+                    {/* Fraud Score: Normalized 0.000 - 1.000 */}
+                    <td className="py-3 px-3 font-bold tabular-nums">
+                      <span
+                        className={
+                          item.fraud_score >= 0.700
+                            ? 'text-[#B83A2E]'
+                            : item.fraud_score >= 0.300
+                            ? 'text-[#B98252]'
+                            : 'text-[#2E1E18]'
+                        }
+                      >
+                        {item.fraud_score.toFixed(3)}
+                      </span>
                     </td>
 
                     {/* Status */}
                     <td className="py-3 px-3 text-right">
-                      {isFraud ? (
-                        <span className="inline-flex items-center gap-1.5 text-[#B83A2E] font-semibold">
+                      {item.status === 'BLOCKED' ? (
+                        <span className="inline-flex items-center gap-1.5 text-[#B83A2E] font-semibold bg-[#FAECE8] px-2 py-0.5 rounded-lg border border-[#B83A2E]/30">
+                          <Lock className="w-3.5 h-3.5" />
+                          BLOCKED
+                        </span>
+                      ) : item.status === 'UNDER_REVIEW' ? (
+                        <span className="inline-flex items-center gap-1.5 text-[#B98252] font-semibold bg-[#FFF9F0] px-2 py-0.5 rounded-lg border border-[#E8D2B5]">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          UNDER REVIEW
+                        </span>
+                      ) : isFlagged || item.status === 'FLAGGED' ? (
+                        <span className="inline-flex items-center gap-1.5 text-[#B83A2E] font-semibold bg-[#FAECE8] px-2 py-0.5 rounded-lg border border-[#B83A2E]/30">
                           <AlertOctagon className="w-3.5 h-3.5" />
                           FLAGGED
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-[#3D7A5A] font-semibold">
+                        <span className="inline-flex items-center gap-1.5 text-[#3D7A5A] font-semibold bg-[#EDF7F1] px-2 py-0.5 rounded-lg border border-[#3D7A5A]/30">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           CLEARED
                         </span>

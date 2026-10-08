@@ -6,7 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { QuantumActivityState, QuantumNodeMetadata } from '../types/quantum';
-import { BackendHealthResponse, ModelInfoResponse, SessionTransactionRecord } from '../types/api';
+import { BackendHealthResponse, ModelInfoResponse, SessionTransactionRecord, TransactionRecordStatus } from '../types/api';
 import { apiClient } from '../api/client';
 import { QUANTUM_NODES } from '../data/quantumNodes';
 
@@ -43,7 +43,8 @@ interface QuantumContextType {
   // Current Session History & Metrics
   sessionHistory: SessionTransactionRecord[];
   sessionMetrics: SessionMetrics;
-  addSessionRecord: (record: Omit<SessionTransactionRecord, 'id' | 'time'>) => void;
+  addSessionRecord: (record: Omit<SessionTransactionRecord, 'id' | 'time'>) => SessionTransactionRecord;
+  updateRecordStatus: (id: string, status: TransactionRecordStatus) => void;
   clearSessionHistory: () => void;
 }
 
@@ -128,13 +129,20 @@ export const QuantumProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  const addSessionRecord = useCallback((rec: Omit<SessionTransactionRecord, 'id' | 'time'>) => {
+  const addSessionRecord = useCallback((rec: Omit<SessionTransactionRecord, 'id' | 'time'>): SessionTransactionRecord => {
     const newRecord: SessionTransactionRecord = {
       ...rec,
       id: `TX-${Date.now().toString().slice(-6)}`,
       time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     };
     setSessionHistory((prev) => [newRecord, ...prev]);
+    return newRecord;
+  }, []);
+
+  const updateRecordStatus = useCallback((id: string, status: TransactionRecordStatus) => {
+    setSessionHistory((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status } : item))
+    );
   }, []);
 
   const clearSessionHistory = useCallback(() => {
@@ -212,6 +220,7 @@ export const QuantumProvider: React.FC<{ children: React.ReactNode }> = ({ child
         sessionHistory,
         sessionMetrics,
         addSessionRecord,
+        updateRecordStatus,
         clearSessionHistory,
       }}
     >
